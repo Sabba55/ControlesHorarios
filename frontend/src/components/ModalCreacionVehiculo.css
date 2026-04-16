@@ -1,0 +1,21 @@
+.modal-vehiculo {
+  color: #111827;
+}
+
+.modal-vehiculo .modal-title,
+.modal-vehiculo .form-label,
+.modal-vehiculo .h6 {
+  color: #111827;
+}
+
+.modal-vehiculo__textarea {
+  min-height: 11rem;
+  font-family: var(--fuente-mono);
+}
+
+.modal-vehiculo__preview {
+  border: 1px solid #dbe2ea;
+  border-radius: 0.8rem;
+  padding: 0.9rem;
+  background: #f8fafc;
+}

@@ -1,0 +1,18 @@
+.modal-ch {
+  color: #111827;
+}
+
+.modal-ch .modal-title,
+.modal-ch .form-label,
+.modal-ch .form-check-label {
+  color: #111827;
+}
+
+.modal-ch__input,
+.modal-ch__input.text-uppercase {
+  color: #111827;
+}
+
+.modal-ch__input::placeholder {
+  color: #6b7280;
+}

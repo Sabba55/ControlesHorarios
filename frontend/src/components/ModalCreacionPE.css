@@ -1,0 +1,16 @@
+.modal-pe {
+  color: #111827;
+}
+
+.modal-pe .modal-title,
+.modal-pe .form-label {
+  color: #111827;
+}
+
+.modal-pe__input {
+  color: #111827;
+}
+
+.modal-pe__input::placeholder {
+  color: #6b7280;
+}

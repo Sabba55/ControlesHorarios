@@ -1,0 +1,9 @@
+.modal-zona {
+  color: #111827;
+}
+
+.modal-zona .modal-title,
+.modal-zona .form-label,
+.modal-zona .form-check-label {
+  color: #111827;
+}
