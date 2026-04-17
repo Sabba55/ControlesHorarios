@@ -57,140 +57,6 @@ export function crearBloqueAsistencia({
   };
 }
 
-function calcularBloqueAsistencia(bloque, cursor, datosVehiculo = {}) {
-  const ch3AIdeal = sumarTiempo(cursor, bloque.tiempoHastaIngreso);
-  const limiteFlexi = sumarTiempo(ch3AIdeal, bloque.maxFlexi);
-  const ch3AReal = datosVehiculo.ch3AReal ?? '';
-  const ch3BReal = datosVehiculo.ch3BReal ?? '';
-  const baseServicio = ch3AReal || ch3BReal || ch3AIdeal;
-  const ch3CIdeal = sumarTiempo(baseServicio, bloque.maxAsistencia);
-  const ch3DIdeal = sumarTiempo(ch3CIdeal, bloque.maxParqueCerrado);
-
-  return {
-    cursorFinal: ch3DIdeal,
-    filas: [
-      {
-        id: `${bloque.id}-a`,
-        punto: `CH${bloque.baseNumero}A`,
-        tipo: 'CH',
-        horario: ch3AIdeal,
-        regla: `Entrada flexi opcional. Puede entrar antes; si usa flexi no puede pasar de ${limiteFlexi}.`,
-      },
-      {
-        id: `${bloque.id}-b`,
-        punto: `CH${bloque.baseNumero}B`,
-        tipo: 'CH',
-        horario: ch3AIdeal,
-        regla: 'Entrada sin flexi. Comparte el mismo ideal que CHA.',
-      },
-      {
-        id: `${bloque.id}-c`,
-        punto: `CH${bloque.baseNumero}C`,
-        tipo: 'CH',
-        horario: ch3CIdeal,
-        regla: `Salida de asistencia. Se calcula con la hora real elegida + ${bloque.maxAsistencia}.`,
-      },
-      {
-        id: `${bloque.id}-d`,
-        punto: `CH${bloque.baseNumero}D`,
-        tipo: 'CH',
-        horario: ch3DIdeal,
-        regla: bloque.noPenalizaAdelantoEnSalida
-          ? `Salida de parque cerrado. Permite adelanto y suma ${bloque.maxParqueCerrado} a CHC ideal.`
-          : `Salida de parque cerrado. Debe cumplirse exacto y suma ${bloque.maxParqueCerrado} a CHC ideal.`,
-      },
-    ],
-  };
-}
-
-export function calcularProyeccionItinerario({
-  horaBaseCh0,
-  definiciones,
-  datosVehiculo = {},
-}) {
-  const filas = [];
-  let cursor = horaBaseCh0;
-
-  definiciones.forEach((item) => {
-    if (item.tipo === 'CH') {
-      filas.push({
-        id: item.id,
-        punto: item.nombreBase,
-        tipo: item.tipo,
-        horario: cursor,
-        regla: item.nombreBase === 'CH0'
-          ? `Base manual de largada. Desde aca se suma ${item.tiempoOtorgado} para obtener el siguiente control.`
-          : `Control horario. Desde aca se otorgan ${item.tiempoOtorgado} hasta el siguiente punto.`,
-      });
-
-      cursor = sumarTiempo(cursor, item.tiempoOtorgado);
-      return;
-    }
-
-    if (item.tipo === 'PE') {
-      const largadaPE = sumarTiempo(cursor, item.tiempoDesdeAnterior);
-
-      filas.push({
-        id: item.id,
-        punto: item.nombreBase,
-        tipo: item.tipo,
-        horario: largadaPE,
-        regla: `Largada proyectada. Desde el PE se otorgan ${item.tiempoOtorgado} para llegar al siguiente CH.`,
-      });
-
-      cursor = sumarTiempo(largadaPE, item.tiempoOtorgado);
-      return;
-    }
-
-    if (item.tipo === 'BLOQUE_ASISTENCIA') {
-      const bloqueCalculado = calcularBloqueAsistencia(
-        item,
-        cursor,
-        datosVehiculo[item.id],
-      );
-
-      filas.push(...bloqueCalculado.filas);
-      cursor = bloqueCalculado.cursorFinal;
-    }
-  });
-
-  return filas;
-}
-
-export function crearEscenarioDemo() {
-  const definiciones = [
-    crearControlHorario({ numero: 0, tiempoOtorgado: '01:15' }),
-    crearControlHorario({ numero: 1, tiempoOtorgado: '00:00' }),
-    crearPruebaEspecial({ numero: 1, tiempoDesdeAnterior: '00:03', tiempoOtorgado: '00:25' }),
-    crearControlHorario({ numero: 2, tiempoOtorgado: '00:00' }),
-    crearPruebaEspecial({ numero: 2, tiempoDesdeAnterior: '00:03', tiempoOtorgado: '00:35' }),
-    crearControlHorario({ numero: 3, tiempoOtorgado: '00:00' }),
-    crearPruebaEspecial({ numero: 3, tiempoDesdeAnterior: '00:03', tiempoOtorgado: '00:45' }),
-    crearBloqueAsistencia({
-      baseNumero: '3',
-      tiempoHastaIngreso: '00:00',
-      maxFlexi: '00:15',
-      maxAsistencia: '00:40',
-      maxParqueCerrado: '00:10',
-      tiempoHastaSiguiente: '00:20',
-      noPenalizaAdelantoEnSalida: true,
-    }),
-    crearControlHorario({ numero: 4, tiempoOtorgado: '00:00' }),
-  ];
-
-  const filas = calcularProyeccionItinerario({
-    horaBaseCh0: '08:00',
-    definiciones,
-    datosVehiculo: {
-      'bloque-asistencia-3': {
-        ch3BReal: '11:09',
-      },
-    },
-  });
-
-  return { definiciones, filas };
-}
-
 function obtenerSalidaItem(item, indice, valores) {
   const baseId = `${item.id}-${indice}`;
 
@@ -238,7 +104,6 @@ export function calcularPlanillaVehiculo(itinerario, valoresVehiculo = {}) {
 
     if (item.tipo === 'PE') {
       const columnaPe = `${baseColumnaId}-proyectada`;
-
       valores[columnaPe] = sumarTiempo(salidaAnterior, item.tiempoDesdeAnterior) ?? '';
       return;
     }
@@ -253,15 +118,45 @@ export function calcularPlanillaVehiculo(itinerario, valoresVehiculo = {}) {
       const columnaDIdeal = `${baseColumnaId}-d-ideal`;
       const columnaDReal = `${baseColumnaId}-d-real`;
 
+      // CH#A ideal — calculado desde el punto anterior
       valores[columnaAIdeal] = sumarTiempo(salidaAnterior, item.tiempoHastaIngreso) ?? '';
+
+      // CH#A real — solo si el piloto usa flexi. Se bloquea en UI si CH#B real tiene valor
       valores[columnaAReal] = valoresVehiculo[columnaAReal] ?? '';
-      valores[columnaBIdeal] = valores[columnaAIdeal];
+
+      // ¿Hubo flexi? Solo si CH#A real tiene valor cargado
+      const hayFlexi = Boolean(valores[columnaAReal]);
+
+      // CH#B ideal:
+      // sin flexi → mismo horario que CH#A ideal
+      // con flexi → CH#A ideal + maxFlexi (horario máximo al que puede llegar)
+      valores[columnaBIdeal] = hayFlexi
+        ? sumarTiempo(valores[columnaAIdeal], item.maxFlexi) ?? ''
+        : valores[columnaAIdeal];
+
+      // CH#B real — siempre editable
       valores[columnaBReal] = valoresVehiculo[columnaBReal] ?? '';
 
-      const baseServicio = valores[columnaAReal] || valores[columnaBReal] || valores[columnaAIdeal];
-      valores[columnaCIdeal] = sumarTiempo(baseServicio, item.maxAsistencia) ?? '';
+      // CH#C ideal:
+      // base = CH#B real si existe, sino CH#B ideal
+      // CH#C ideal = base + maxAsistencia
+      const baseParaC = valores[columnaBReal] || valores[columnaBIdeal];
+      valores[columnaCIdeal] = sumarTiempo(baseParaC, item.maxAsistencia) ?? '';
+
+      // CH#C real — editable, validacion visual si difiere del ideal
       valores[columnaCReal] = valoresVehiculo[columnaCReal] ?? '';
-      valores[columnaDIdeal] = sumarTiempo(valores[columnaCIdeal], item.maxParqueCerrado) ?? '';
+
+      // CH#D ideal:
+      // sin flexi → CH#C ideal + maxParqueCerrado
+      // con flexi → CH#A ideal + maxAsistencia + maxParqueCerrado
+      if (hayFlexi) {
+        const baseD = sumarTiempo(valores[columnaAIdeal], item.maxAsistencia) ?? '';
+        valores[columnaDIdeal] = sumarTiempo(baseD, item.maxParqueCerrado) ?? '';
+      } else {
+        valores[columnaDIdeal] = sumarTiempo(valores[columnaCIdeal], item.maxParqueCerrado) ?? '';
+      }
+
+      // CH#D real — editable, validacion visual si difiere del ideal
       valores[columnaDReal] = valoresVehiculo[columnaDReal] ?? '';
     }
   });

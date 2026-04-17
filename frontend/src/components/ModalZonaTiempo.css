@@ -2,7 +2,11 @@
   color: #111827;
 }
 
-.modal-zona .modal-title,
+.modal-title {
+  color: white;
+}
+
+.modal-zona,
 .modal-zona .form-label,
 .modal-zona .form-check-label {
   color: #111827;

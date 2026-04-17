@@ -2,7 +2,11 @@
   color: #111827;
 }
 
-.modal-pe .modal-title,
+.modal-title {
+  color: white;
+}
+
+.modal-pe,
 .modal-pe .form-label {
   color: #111827;
 }

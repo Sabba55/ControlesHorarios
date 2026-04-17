@@ -1,8 +1,16 @@
+.modal-header {
+  background-color: #0f172a;
+}
+
+.modal-title {
+  color: white;
+}
+
 .modal-vehiculo {
   color: #111827;
 }
 
-.modal-vehiculo .modal-title,
+.modal-vehiculo,
 .modal-vehiculo .form-label,
 .modal-vehiculo .h6 {
   color: #111827;

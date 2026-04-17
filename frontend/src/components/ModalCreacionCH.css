@@ -2,7 +2,11 @@
   color: #111827;
 }
 
-.modal-ch .modal-title,
+.modal-title {
+  color: white;
+}
+
+.modal-ch,
 .modal-ch .form-label,
 .modal-ch .form-check-label {
   color: #111827;

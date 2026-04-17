@@ -120,32 +120,35 @@
   min-width: 92px;
   width: 92px;
   text-align: center;
-  background: #0f172a;
-  color: #f8fafc;
+  background: #0f172a !important;
+  color: #f8fafc !important;
   font-weight: 800;
   font-size: 1rem;
+  z-index: 20 !important;
+}
+
+.columna-fija--piloto {
+  left: 92px;
+  min-width: 200px;
+  width: 200px;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  z-index: 20 !important;
+  text-align: center;
 }
 
 .encabezado-fijo {
-  z-index: 30 !important;
+  z-index: 40 !important;
 }
 
 .colmn-nro {
   font-size: 1.8rem;
 }
 
-.columna-fija--piloto {
-  left: 92px;
-  min-width: 260px;
-  width: 260px;
-  background: #0f172a;
-  color: #f8fafc;
-}
-
 .columna-fija--cuerpo {
-  z-index: 15;
-  background: #f8fafc;
-  color: #0f172a;
+  z-index: 20 !important;
+  background: #d4d4d4 !important;
+  color: #0f172a !important;
 }
 
 .columna-fija--piloto-cuerpo {
@@ -178,6 +181,11 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.columna-fija--numero.columna-fija--cuerpo {
+  background: #0f172a !important;
+  color: #f8fafc !important;
 }
 
 .encabezado-vacio,
@@ -344,4 +352,152 @@
   .tabla-scroll {
     max-height: calc(100vh - 18rem);
   }
+}
+
+/* Agregar al final de App.css */
+
+.encabezado-limite {
+  min-width: 138px;
+  padding: 0.95rem 0.8rem !important;
+  text-align: center;
+  text-transform: uppercase;
+  background: #dc2626 !important;
+  color: #fff1f2 !important;
+}
+
+.encabezado-limite span {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.encabezado-limite small {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+}
+
+.celda-rally--limite {
+  background: #fee2e2;
+}
+
+.texto-limite {
+  min-height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.7rem;
+  background: #fecaca;
+  color: #7f1d1d;
+  font-family: var(--fuente-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════
+   ZONA DE TIEMPO — encabezados
+   ═══════════════════════════════════════════════════ */
+
+.encabezado-zona {
+  min-width: 138px;
+  padding: 0.95rem 0.8rem !important;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.encabezado-zona span {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.encabezado-zona small {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+}
+
+/* Verde oscuro — Flexi (CH#A) */
+.encabezado-zona--flexi {
+  background: #14532d !important;
+  color: #bbf7d0 !important;
+}
+
+/* Verde medio — Entrada parque asistencia (CH#B) */
+.encabezado-zona--entrada {
+  background: #2b7949 !important;
+  color: #dcfce7 !important;
+}
+
+/* Verde claro — Salida parque / entrada parque cerrado (CH#C) */
+.encabezado-zona--salida {
+  background: #16a34a !important;
+  color: #f0fdf4 !important;
+}
+
+/* Gris claro — Salida parque cerrado (CH#D) */
+.encabezado-zona--parque {
+  background: #64748b !important;
+  color: #f8fafc !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   ZONA DE TIEMPO — celdas body
+   ═══════════════════════════════════════════════════ */
+
+.celda-rally--zona-flexi {
+  background: #f0fdf4;
+}
+
+.celda-rally--zona-entrada {
+  background: #30be62;
+}
+
+.celda-rally--zona-salida {
+  background: #bbf7d0;
+}
+
+.celda-rally--zona-parque {
+  background: #f1f5f9;
+}
+
+/* ═══════════════════════════════════════════════════
+   ZONA DE TIEMPO — label de máximo encima del input
+   ═══════════════════════════════════════════════════ */
+
+.celda-zona__label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #166534;
+  margin-bottom: 0.25rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.celda-rally--zona-parque .celda-zona__label {
+  color: #475569;
+}
+
+/* ═══════════════════════════════════════════════════
+   INPUT con error de igualdad (CH#C y CH#D real)
+   ═══════════════════════════════════════════════════ */
+
+.input-hora--error {
+  border-color: #dc2626 !important;
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+  box-shadow: 0 0 0 0.2rem rgba(220, 38, 38, 0.2) !important;
+}
+
+/* Input bloqueado (CH#A real cuando no hubo flexi) */
+.input-hora:disabled {
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  border-color: #cbd5e1 !important;
+  cursor: not-allowed;
+  opacity: 1;
 }
