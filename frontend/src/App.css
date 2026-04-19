@@ -25,7 +25,7 @@
 }
 
 .subencabezado__marca {
-  color:  rgb(255 255 255 / var(--tw-text-opacity, 1));
+  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
   font-weight: 300;
   font-size: 1.125rem;
   line-height: 1.75rem;
@@ -110,6 +110,8 @@
   vertical-align: middle;
 }
 
+/* ── Columnas fijas ───────────────────────────────────────────────────────── */
+
 .columna-fija {
   position: sticky;
   z-index: 25;
@@ -151,6 +153,22 @@
   color: #0f172a !important;
 }
 
+/* Color base oscuro para la celda N° (sin categoría especial) */
+.columna-fija--numero.columna-fija--cuerpo {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+/* ── Colores de categoría en columna N° ───────────────────────────────────── */
+/* Especificidad triple para pisar el color base de arriba */
+
+.columna-fija--numero.columna-fija--cuerpo.col-nro--rc2  { background: #d9d9d9 !important; color: #1e293b !important; }
+.columna-fija--numero.columna-fija--cuerpo.col-nro--rcmr { background: #ffbbbb !important; color: #1e293b !important; }
+.columna-fija--numero.columna-fija--cuerpo.col-nro--rc4  { background: #ffd966 !important; color: #1e293b !important; }
+.columna-fija--numero.columna-fija--cuerpo.col-nro--rc5  { background: #b7e1cd !important; color: #1e293b !important; }
+
+/* ── Columna piloto ───────────────────────────────────────────────────────── */
+
 .columna-fija--piloto-cuerpo {
   display: flex;
   flex-direction: column;
@@ -183,10 +201,7 @@
   text-transform: uppercase;
 }
 
-.columna-fija--numero.columna-fija--cuerpo {
-  background: #0f172a !important;
-  color: #f8fafc !important;
-}
+/* ── Encabezados CH ───────────────────────────────────────────────────────── */
 
 .encabezado-vacio,
 .encabezado-ch {
@@ -229,6 +244,8 @@
   color: #111827 !important;
 }
 
+/* ── Encabezados PE ───────────────────────────────────────────────────────── */
+
 .encabezado-pe {
   min-width: 138px;
   padding: 0.95rem 0.8rem !important;
@@ -254,107 +271,35 @@
   letter-spacing: 0.08em;
 }
 
-.celda-rally {
+/* ── Encabezados zona de tiempo ───────────────────────────────────────────── */
+
+.encabezado-zona {
   min-width: 138px;
-  padding: 0.65rem !important;
-  background: #fff;
-}
-
-.celda-rally--ideal {
-  background: #fff8db;
-}
-
-.celda-rally--real {
-  background: #ffffff;
-}
-
-.celda-rally--pe {
-  background: #dbeafe;
-}
-
-.input-hora {
-  border-radius: 0.7rem;
-  min-height: 2.5rem;
-  border: 2px solid #cbd5e1;
-  font-family: var(--fuente-mono);
-  font-size: 0.95rem;
-  font-weight: 700;
+  padding: 0.95rem 0.8rem !important;
   text-align: center;
-}
-
-.input-hora:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 0.22rem rgba(37, 99, 235, 0.16);
-}
-
-.texto-piloto {
-  color: #0f172a;
-  font-size: 0.95rem;
-  line-height: 1.1;
   text-transform: uppercase;
 }
 
-.texto-secundario {
-  color: #475569;
-  font-size: 0.78rem;
-}
-
-.texto-pe {
-  min-height: 2.5rem;
-  display: grid;
-  place-items: center;
-  border-radius: 0.7rem;
-  background: #bfdbfe;
-  color: #1e3a8a;
-  font-family: var(--fuente-mono);
+.encabezado-zona span {
+  display: block;
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 800;
 }
 
-.texto-calculado {
-  min-height: 2.5rem;
-  display: grid;
-  place-items: center;
-  border-radius: 0.7rem;
-  background: #fef3c7;
-  color: #92400e;
-  font-family: var(--fuente-mono);
-  font-size: 0.95rem;
-  font-weight: 700;
+.encabezado-zona small {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
 }
 
-.texto-enfocable {
-  outline: none;
-}
+.encabezado-zona--flexi   { background: #14532d !important; color: #bbf7d0 !important; }
+.encabezado-zona--entrada { background: #2b7949 !important; color: #dcfce7 !important; }
+.encabezado-zona--salida  { background: #16a34a !important; color: #f0fdf4 !important; }
+.encabezado-zona--parque  { background: #64748b !important; color: #f8fafc !important; }
 
-.celda-activa {
-  box-shadow: inset 0 0 0 3px rgba(37, 99, 235, 0.45);
-}
-
-.modal-backdrop-rtcs {
-  position: fixed;
-  inset: 0;
-  z-index: 1050;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
-}
-
-.modal-content {
-  border-radius: 1rem;
-}
-
-.modal-header,
-.modal-footer {
-  border-color: #e2e8f0;
-}
-
-@media (max-width: 900px) {
-  .tabla-scroll {
-    max-height: calc(100vh - 18rem);
-  }
-}
-
-/* Agregar al final de App.css */
+/* ── Encabezado límite ────────────────────────────────────────────────────── */
 
 .encabezado-limite {
   min-width: 138px;
@@ -378,8 +323,66 @@
   letter-spacing: 0.08em;
 }
 
-.celda-rally--limite {
-  background: #fee2e2;
+/* ── Celdas body ──────────────────────────────────────────────────────────── */
+
+.celda-rally {
+  min-width: 138px;
+  padding: 0.65rem !important;
+  background: #fff;
+}
+
+.celda-rally--ideal   { background: #fef3c7 !important;; }
+.celda-rally--real    { background: #ffffff; }
+.celda-rally--limite  { background: #fee2e2; }
+
+/* PE — celda completa celeste */
+.celda-rally--pe { background: #bfdbfe !important; }
+
+/* Zona de tiempo */
+.celda-rally--zona-flexi   { background: #f0fdf4; }
+.celda-rally--zona-entrada { background: #30be62; }
+.celda-rally--zona-salida  { background: #bbf7d0; }
+.celda-rally--zona-parque  { background: #f1f5f9; }
+
+/* Error de validación (real ≠ ideal) */
+.celda-rally--error { background: #fca5a5 !important; }
+
+/* ── Textos de celda ──────────────────────────────────────────────────────── */
+
+.texto-piloto {
+  color: #0f172a;
+  font-size: 0.95rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.texto-secundario {
+  color: #475569;
+  font-size: 0.78rem;
+}
+
+.texto-pe {
+  min-height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.7rem;
+  background: transparent;        /* el fondo lo da el <td> */
+  color: #1e3a8a;
+  font-family: var(--fuente-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.texto-calculado {
+  min-height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.7rem;
+  background: #fef3c7;
+  color: #92400e;
+  font-family: var(--fuente-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .texto-limite {
@@ -394,78 +397,48 @@
   font-weight: 700;
 }
 
-/* ═══════════════════════════════════════════════════
-   ZONA DE TIEMPO — encabezados
-   ═══════════════════════════════════════════════════ */
-
-.encabezado-zona {
-  min-width: 138px;
-  padding: 0.95rem 0.8rem !important;
-  text-align: center;
-  text-transform: uppercase;
+.texto-enfocable {
+  outline: none;
 }
 
-.encabezado-zona span {
-  display: block;
+/* ── Inputs ───────────────────────────────────────────────────────────────── */
+
+.input-hora {
+  border-radius: 0.7rem;
+  min-height: 2.5rem;
+  border: 2px solid #cbd5e1;
+  font-family: var(--fuente-mono);
   font-size: 0.95rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.input-hora:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 0.22rem rgba(37, 99, 235, 0.16);
+}
+
+.input-hora:disabled {
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  border-color: #cbd5e1 !important;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* Input dentro de celda con error */
+.celda-rally--error .input-hora {
+  background: transparent !important;
+  border-color: #dc2626 !important;
+  color: #7f1d1d !important;
   font-weight: 800;
 }
 
-.encabezado-zona small {
-  display: block;
-  margin-top: 0.2rem;
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
-  opacity: 0.85;
+.celda-rally--error .input-hora:focus {
+  box-shadow: 0 0 0 0.2rem rgba(220, 38, 38, 0.25) !important;
 }
 
-/* Verde oscuro — Flexi (CH#A) */
-.encabezado-zona--flexi {
-  background: #14532d !important;
-  color: #bbf7d0 !important;
-}
-
-/* Verde medio — Entrada parque asistencia (CH#B) */
-.encabezado-zona--entrada {
-  background: #2b7949 !important;
-  color: #dcfce7 !important;
-}
-
-/* Verde claro — Salida parque / entrada parque cerrado (CH#C) */
-.encabezado-zona--salida {
-  background: #16a34a !important;
-  color: #f0fdf4 !important;
-}
-
-/* Gris claro — Salida parque cerrado (CH#D) */
-.encabezado-zona--parque {
-  background: #64748b !important;
-  color: #f8fafc !important;
-}
-
-/* ═══════════════════════════════════════════════════
-   ZONA DE TIEMPO — celdas body
-   ═══════════════════════════════════════════════════ */
-
-.celda-rally--zona-flexi {
-  background: #f0fdf4;
-}
-
-.celda-rally--zona-entrada {
-  background: #30be62;
-}
-
-.celda-rally--zona-salida {
-  background: #bbf7d0;
-}
-
-.celda-rally--zona-parque {
-  background: #f1f5f9;
-}
-
-/* ═══════════════════════════════════════════════════
-   ZONA DE TIEMPO — label de máximo encima del input
-   ═══════════════════════════════════════════════════ */
+/* ── Zona de tiempo — label de máximo ─────────────────────────────────────── */
 
 .celda-zona__label {
   font-size: 0.62rem;
@@ -482,22 +455,35 @@
   color: #475569;
 }
 
-/* ═══════════════════════════════════════════════════
-   INPUT con error de igualdad (CH#C y CH#D real)
-   ═══════════════════════════════════════════════════ */
+/* ── Celda activa (foco por teclado) ──────────────────────────────────────── */
 
-.input-hora--error {
-  border-color: #dc2626 !important;
-  background: #fef2f2 !important;
-  color: #991b1b !important;
-  box-shadow: 0 0 0 0.2rem rgba(220, 38, 38, 0.2) !important;
+.celda-activa {
+  box-shadow: inset 0 0 0 3px rgba(37, 99, 235, 0.45);
 }
 
-/* Input bloqueado (CH#A real cuando no hubo flexi) */
-.input-hora:disabled {
-  background: #e2e8f0 !important;
-  color: #94a3b8 !important;
-  border-color: #cbd5e1 !important;
-  cursor: not-allowed;
-  opacity: 1;
+/* ── Modales ──────────────────────────────────────────────────────────────── */
+
+.modal-backdrop-rtcs {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  border-radius: 1rem;
+}
+
+.modal-header,
+.modal-footer {
+  border-color: #e2e8f0;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .tabla-scroll {
+    max-height: calc(100vh - 18rem);
+  }
 }

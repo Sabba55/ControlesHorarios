@@ -1,21 +1,16 @@
 // rtcs/backend/src/controllers/vehiculos.ctrl.js
-// Lógica de negocio para los vehículos de la competencia.
-// Incluye carga masiva (pegado desde portapapeles) y reinicio de competencia.
-
 const pool = require('../../db');
 
-// ── Categorías válidas ─────────────────────────────────────────────────────
-// Ajustá esta lista según las categorías reales de tu competencia.
-const CATEGORIAS_VALIDAS = ['RC1', 'RC2', 'RC3', 'RC4', 'RC5', 'GENERAL'];
+const CATEGORIAS_VALIDAS = ['RC1', 'RC2', 'RC3', 'RC4', 'RC5', 'RCMR', 'COPA RC2', 'GENERAL'];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/vehiculos
-// Devuelve todos los vehículos ordenados por número.
+// Devuelve todos los vehículos ordenados por orden de ingreso.
 // ─────────────────────────────────────────────────────────────────────────────
 const obtenerVehiculos = async (_req, res) => {
   try {
     const resultado = await pool.query(
-      'SELECT * FROM vehiculos ORDER BY numero ASC'
+      'SELECT * FROM vehiculos ORDER BY orden_ingreso ASC'
     );
     res.json(resultado.rows);
   } catch (err) {
@@ -26,7 +21,6 @@ const obtenerVehiculos = async (_req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/vehiculos/:numero
-// Devuelve un único vehículo por su número de competidor.
 // ─────────────────────────────────────────────────────────────────────────────
 const obtenerVehiculoPorNumero = async (req, res) => {
   const { numero } = req.params;
@@ -47,8 +41,6 @@ const obtenerVehiculoPorNumero = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/vehiculos
-// Crea un único vehículo nuevo.
-// Body: { numero, piloto, navegante, categoria }
 // ─────────────────────────────────────────────────────────────────────────────
 const crearVehiculo = async (req, res) => {
   const { numero, piloto, navegante, categoria } = req.body;
@@ -59,8 +51,7 @@ const crearVehiculo = async (req, res) => {
   try {
     const resultado = await pool.query(
       `INSERT INTO vehiculos (numero, piloto, navegante, categoria)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
+       VALUES ($1, $2, $3, $4) RETURNING *`,
       [numero, piloto, navegante || null, categoria]
     );
     res.status(201).json(resultado.rows[0]);
@@ -75,13 +66,7 @@ const crearVehiculo = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/vehiculos/carga-masiva/lote
-// Crea múltiples vehículos de una sola vez usando una transacción.
-// Si algún vehículo falla la validación, se informa pero se continúa con el resto.
-// Si hay un error de base de datos, se hace ROLLBACK de todos.
-//
-// Body: [{ numero, piloto, navegante, categoria }, ...]
-//
-// Respuesta: { insertados: [...], errores: [...] }
+// Inserta en el orden exacto del array recibido.
 // ─────────────────────────────────────────────────────────────────────────────
 const cargaMasiva = async (req, res) => {
   const vehiculos = req.body;
@@ -93,7 +78,7 @@ const cargaMasiva = async (req, res) => {
   const insertados = [];
   const errores    = [];
 
-  // Pre-validar todos antes de abrir la transacción
+  // Pre-validar todos
   const validos = [];
   for (const v of vehiculos) {
     const error = validarVehiculo(v);
@@ -105,10 +90,7 @@ const cargaMasiva = async (req, res) => {
   }
 
   if (validos.length === 0) {
-    return res.status(400).json({
-      error:   'Ningún vehículo pasó la validación.',
-      errores,
-    });
+    return res.status(400).json({ error: 'Ningún vehículo pasó la validación.', errores });
   }
 
   const client = await pool.connect();
@@ -137,7 +119,7 @@ const cargaMasiva = async (req, res) => {
 
     await client.query('COMMIT');
     res.status(201).json({
-      mensaje:    `${insertados.length} vehículo(s) insertado(s). ${errores.length} omitido(s).`,
+      mensaje:   `${insertados.length} vehículo(s) insertado(s). ${errores.length} omitido(s).`,
       insertados,
       errores,
     });
@@ -152,11 +134,9 @@ const cargaMasiva = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUT /api/vehiculos/:numero
-// Actualiza los datos de un vehículo existente.
-// Solo modifica los campos enviados en el body.
 // ─────────────────────────────────────────────────────────────────────────────
 const actualizarVehiculo = async (req, res) => {
-  const { numero }                    = req.params;
+  const { numero }                       = req.params;
   const { piloto, navegante, categoria } = req.body;
 
   try {
@@ -191,33 +171,24 @@ const actualizarVehiculo = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DELETE /api/vehiculos/:numero
-// Elimina un vehículo y sus registros de tiempo asociados.
 // ─────────────────────────────────────────────────────────────────────────────
 const eliminarVehiculo = async (req, res) => {
   const { numero } = req.params;
   const client     = await pool.connect();
   try {
     await client.query('BEGIN');
-
-    // Primero eliminamos los registros de tiempo del vehículo (FK constraint)
-    await client.query(
-      'DELETE FROM registros_tiempos WHERE vehiculo_id = $1',
-      [numero]
-    );
-
+    await client.query('DELETE FROM registros_tiempos WHERE vehiculo_id = $1', [numero]);
     const resultado = await client.query(
       'DELETE FROM vehiculos WHERE numero = $1 RETURNING *',
       [numero]
     );
-
     if (resultado.rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: `No se encontró el vehículo N° ${numero}.` });
     }
-
     await client.query('COMMIT');
     res.json({
-      mensaje:   `Vehículo N° ${numero} (${resultado.rows[0].piloto}) eliminado correctamente.`,
+      mensaje:   `Vehículo N° ${numero} eliminado correctamente.`,
       eliminado: resultado.rows[0],
     });
   } catch (err) {
@@ -231,9 +202,6 @@ const eliminarVehiculo = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DELETE /api/vehiculos
-// Elimina TODOS los vehículos y sus registros de tiempo.
-// Acción del botón global "Reiniciar Competencia".
-// NO borra el cronograma, solo los participantes y sus tiempos.
 // ─────────────────────────────────────────────────────────────────────────────
 const eliminarTodosLosVehiculos = async (_req, res) => {
   const client = await pool.connect();
@@ -242,9 +210,7 @@ const eliminarTodosLosVehiculos = async (_req, res) => {
     await client.query('DELETE FROM registros_tiempos');
     await client.query('DELETE FROM vehiculos');
     await client.query('COMMIT');
-    res.json({
-      mensaje: 'Competencia reiniciada. Todos los vehículos y registros de tiempo fueron eliminados.',
-    });
+    res.json({ mensaje: 'Todos los vehículos y registros eliminados.' });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('❌ eliminarTodosLosVehiculos:', err.message);
@@ -255,7 +221,7 @@ const eliminarTodosLosVehiculos = async (_req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Función auxiliar de validación
+// Validación
 // ─────────────────────────────────────────────────────────────────────────────
 const validarVehiculo = ({ numero, piloto, categoria }) => {
   if (!numero || isNaN(Number(numero)) || Number(numero) <= 0) {
@@ -267,7 +233,7 @@ const validarVehiculo = ({ numero, piloto, categoria }) => {
   if (!categoria || !CATEGORIAS_VALIDAS.includes(categoria)) {
     return `Categoría inválida. Las categorías permitidas son: ${CATEGORIAS_VALIDAS.join(', ')}.`;
   }
-  return null; // Sin errores
+  return null;
 };
 
 module.exports = {

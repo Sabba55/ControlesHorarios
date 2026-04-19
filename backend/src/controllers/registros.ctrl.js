@@ -1,18 +1,11 @@
 // rtcs/backend/src/controllers/registros.ctrl.js
-// Núcleo del sistema RTCS.
-// Maneja hora_ideal, hora_real y los dos tipos de efecto cascada:
-//   - Horizontal: recalcula horas_ideales siguientes al ingresar una hora_real.
-//   - Vertical:   propaga un offset manual a todos los vehículos que largan después.
-
 const pool  = require('../../db');
 const dayjs = require('dayjs');
 
-// Formato estándar para operar con horas en dayjs
 const FORMATO_HORA = 'HH:mm';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/registros
-// Devuelve todos los registros con joins a vehiculos y cronograma.
 // ─────────────────────────────────────────────────────────────────────────────
 const obtenerTodosLosRegistros = async (_req, res) => {
   try {
@@ -43,7 +36,6 @@ const obtenerTodosLosRegistros = async (_req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/registros/vehiculo/:numero
-// Devuelve todos los registros de un vehículo ordenados por el cronograma.
 // ─────────────────────────────────────────────────────────────────────────────
 const obtenerRegistrosPorVehiculo = async (req, res) => {
   const { numero } = req.params;
@@ -77,16 +69,6 @@ const obtenerRegistrosPorVehiculo = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/registros/grilla
-// Devuelve la grilla completa estructurada para el frontend.
-// Formato de respuesta:
-// [
-//   {
-//     vehiculo: { numero, piloto, navegante, categoria },
-//     tiempos: [ { cronograma_id, punto_nombre, punto_tipo, punto_orden,
-//                  hora_ideal, hora_real, no_penaliza_adelanto }, ... ]
-//   },
-//   ...
-// ]
 // ─────────────────────────────────────────────────────────────────────────────
 const obtenerGrilla = async (_req, res) => {
   try {
@@ -110,7 +92,6 @@ const obtenerGrilla = async (_req, res) => {
       ORDER BY v.numero ASC, c.orden ASC
     `);
 
-    // Agrupar por vehículo
     const mapa = new Map();
     for (const fila of resultado.rows) {
       if (!mapa.has(fila.numero)) {
@@ -147,17 +128,14 @@ const obtenerGrilla = async (_req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/registros/inicializar
-// Genera filas vacías en registros_tiempos para cada par (vehiculo × punto).
-// Se llama una sola vez al arrancar la competencia.
-// Si ya existen registros para un par, los ignora (ON CONFLICT DO NOTHING).
 // ─────────────────────────────────────────────────────────────────────────────
 const inicializarRegistros = async (_req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    const vehiculos   = await client.query('SELECT numero FROM vehiculos ORDER BY numero ASC');
-    const cronograma  = await client.query('SELECT id FROM cronograma ORDER BY orden ASC');
+    const vehiculos  = await client.query('SELECT numero FROM vehiculos ORDER BY numero ASC');
+    const cronograma = await client.query('SELECT id FROM cronograma ORDER BY orden ASC');
 
     if (vehiculos.rows.length === 0) {
       await client.query('ROLLBACK');
@@ -183,9 +161,9 @@ const inicializarRegistros = async (_req, res) => {
 
     await client.query('COMMIT');
     res.status(201).json({
-      mensaje:    `Grilla inicializada con ${insertados} registro(s).`,
-      vehiculos:  vehiculos.rows.length,
-      puntos:     cronograma.rows.length,
+      mensaje:   `Grilla inicializada con ${insertados} registro(s).`,
+      vehiculos: vehiculos.rows.length,
+      puntos:    cronograma.rows.length,
       insertados,
     });
   } catch (err) {
@@ -199,15 +177,6 @@ const inicializarRegistros = async (_req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUT /api/registros/hora-real
-// Actualiza la hora_real de un punto y dispara la CASCADA HORIZONTAL:
-// recalcula las horas_ideales de todos los puntos siguientes del mismo vehículo.
-//
-// Lógica especial según tipo de punto:
-//   - FLEXI / ASISTENCIA / REGRUP: la hora_ideal del SIGUIENTE punto
-//     se calcula como hora_real_del_parque + tiempo_enlace_del_siguiente.
-//   - CH / PE: la hora_ideal del siguiente = hora_ideal_actual + tiempo_enlace_siguiente.
-//
-// Body: { vehiculo_id, cronograma_id, hora_real }
 // ─────────────────────────────────────────────────────────────────────────────
 const actualizarHoraReal = async (req, res) => {
   const { vehiculo_id, cronograma_id, hora_real } = req.body;
@@ -215,8 +184,6 @@ const actualizarHoraReal = async (req, res) => {
   if (!vehiculo_id || !cronograma_id) {
     return res.status(400).json({ error: 'vehiculo_id y cronograma_id son obligatorios.' });
   }
-
-  // hora_real puede ser null (para borrar el valor)
   if (hora_real !== null && hora_real !== undefined) {
     if (!esHoraValida(hora_real)) {
       return res.status(400).json({ error: 'Formato de hora inválido. Usá HH:mm.' });
@@ -227,21 +194,17 @@ const actualizarHoraReal = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 1. Actualizar la hora_real del punto ingresado
     await client.query(
-      `UPDATE registros_tiempos
-       SET hora_real = $1
+      `UPDATE registros_tiempos SET hora_real = $1
        WHERE vehiculo_id = $2 AND cronograma_id = $3`,
       [hora_real || null, vehiculo_id, cronograma_id]
     );
 
-    // 2. Si se borró la hora_real, no recalculamos cascada
     if (!hora_real) {
       await client.query('COMMIT');
       return res.json({ mensaje: 'Hora real eliminada. Sin recálculo de cascada.' });
     }
 
-    // 3. Traer todos los puntos del cronograma ordenados
     const puntos = await client.query(
       `SELECT c.id, c.orden, c.tipo, c.tiempo_enlace,
               rt.hora_ideal, rt.hora_real
@@ -252,7 +215,7 @@ const actualizarHoraReal = async (req, res) => {
       [vehiculo_id]
     );
 
-    const filas       = puntos.rows;
+    const filas        = puntos.rows;
     const indiceActual = filas.findIndex(f => f.id === parseInt(cronograma_id));
 
     if (indiceActual === -1 || indiceActual === filas.length - 1) {
@@ -260,30 +223,25 @@ const actualizarHoraReal = async (req, res) => {
       return res.json({ mensaje: 'Hora real guardada. Es el último punto, sin cascada.' });
     }
 
-    // 4. Cascada horizontal: recalcular horas_ideales de los puntos siguientes
-    const actualizados = [];
-    const tiposParcque = ['FLEXI', 'ASISTENCIA', 'REGRUP'];
+    const actualizados  = [];
+    const tiposParque   = ['FLEXI', 'ASISTENCIA', 'REGRUP'];
 
     for (let i = indiceActual + 1; i < filas.length; i++) {
       const puntoAnterior = filas[i - 1];
       const puntoActual   = filas[i];
-
       let nuevaHoraIdeal;
 
-      if (tiposParcque.includes(puntoAnterior.tipo)) {
-        // Regla especial de parque: salida = hora_real del parque + tiempo_enlace del punto actual
+      if (tiposParque.includes(puntoAnterior.tipo)) {
         const horaRealParque = puntoAnterior.hora_real ||
           (i - 1 === indiceActual ? hora_real : null);
-
-        if (!horaRealParque) break; // Sin hora_real del parque no podemos calcular
+        if (!horaRealParque) break;
 
         nuevaHoraIdeal = dayjs(`1970-01-01 ${horaRealParque}`, 'YYYY-MM-DD HH:mm')
           .add(puntoActual.tiempo_enlace, 'minute')
           .format(FORMATO_HORA);
       } else {
-        // Regla estándar: hora_ideal siguiente = hora_ideal anterior + tiempo_enlace
         const baseHora = puntoAnterior.hora_ideal;
-        if (!baseHora) break; // Sin base no propagamos
+        if (!baseHora) break;
 
         nuevaHoraIdeal = dayjs(`1970-01-01 ${baseHora}`, 'YYYY-MM-DD HH:mm')
           .add(puntoActual.tiempo_enlace, 'minute')
@@ -291,22 +249,17 @@ const actualizarHoraReal = async (req, res) => {
       }
 
       await client.query(
-        `UPDATE registros_tiempos
-         SET hora_ideal = $1
+        `UPDATE registros_tiempos SET hora_ideal = $1
          WHERE vehiculo_id = $2 AND cronograma_id = $3`,
         [nuevaHoraIdeal, vehiculo_id, puntoActual.id]
       );
 
-      // Actualizar la fila local para que el siguiente ciclo use el valor nuevo
       filas[i].hora_ideal = nuevaHoraIdeal;
       actualizados.push({ cronograma_id: puntoActual.id, nueva_hora_ideal: nuevaHoraIdeal });
     }
 
     await client.query('COMMIT');
-    res.json({
-      mensaje:    'Hora real guardada y cascada horizontal aplicada.',
-      actualizados,
-    });
+    res.json({ mensaje: 'Hora real guardada y cascada horizontal aplicada.', actualizados });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('❌ actualizarHoraReal:', err.message);
@@ -318,12 +271,6 @@ const actualizarHoraReal = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUT /api/registros/hora-ideal
-// Actualiza manualmente la hora_ideal de un vehículo en un punto específico.
-// Si propagar_offset = true, aplica la CASCADA VERTICAL:
-// calcula el offset (diferencia con la hora_ideal original) y lo suma a todos
-// los vehículos que tienen mayor número (largan después).
-//
-// Body: { vehiculo_id, cronograma_id, hora_ideal, propagar_offset }
 // ─────────────────────────────────────────────────────────────────────────────
 const actualizarHoraIdeal = async (req, res) => {
   const { vehiculo_id, cronograma_id, hora_ideal, propagar_offset = false } = req.body;
@@ -339,7 +286,6 @@ const actualizarHoraIdeal = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 1. Obtener la hora_ideal original para calcular el offset
     const original = await client.query(
       `SELECT hora_ideal FROM registros_tiempos
        WHERE vehiculo_id = $1 AND cronograma_id = $2`,
@@ -353,24 +299,22 @@ const actualizarHoraIdeal = async (req, res) => {
 
     const horaOriginal = original.rows[0].hora_ideal;
 
-    // 2. Guardar la nueva hora_ideal para el vehículo indicado
     await client.query(
-      `UPDATE registros_tiempos
-       SET hora_ideal = $1
+      `UPDATE registros_tiempos SET hora_ideal = $1
        WHERE vehiculo_id = $2 AND cronograma_id = $3`,
       [hora_ideal, vehiculo_id, cronograma_id]
     );
 
     const propagados = [];
 
-    // 3. Cascada vertical: aplicar el offset a vehículos posteriores
     if (propagar_offset && horaOriginal) {
       const offsetMinutos = calcularOffsetMinutos(horaOriginal, hora_ideal);
 
       if (offsetMinutos !== 0) {
-        // Traer todos los vehículos con número mayor al actual
         const vehiculosPosteriores = await client.query(
-          'SELECT numero FROM vehiculos WHERE numero > $1 ORDER BY numero ASC',
+          `SELECT numero FROM vehiculos
+           WHERE orden_ingreso > (SELECT orden_ingreso FROM vehiculos WHERE numero = $1)
+           ORDER BY orden_ingreso ASC`,
           [vehiculo_id]
         );
 
@@ -391,8 +335,7 @@ const actualizarHoraIdeal = async (req, res) => {
             .format(FORMATO_HORA);
 
           await client.query(
-            `UPDATE registros_tiempos
-             SET hora_ideal = $1
+            `UPDATE registros_tiempos SET hora_ideal = $1
              WHERE vehiculo_id = $2 AND cronograma_id = $3`,
             [nuevaHora, v.numero, cronograma_id]
           );
@@ -404,7 +347,7 @@ const actualizarHoraIdeal = async (req, res) => {
 
     await client.query('COMMIT');
     res.json({
-      mensaje:    `Hora ideal actualizada${propagar_offset ? ' con cascada vertical' : ''}.`,
+      mensaje: `Hora ideal actualizada${propagar_offset ? ' con cascada vertical' : ''}.`,
       offset_aplicado_minutos: propagar_offset && horaOriginal
         ? calcularOffsetMinutos(horaOriginal, hora_ideal)
         : 0,
@@ -420,8 +363,107 @@ const actualizarHoraIdeal = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PUT /api/registros/tiempo-extra
+// Suma minutos_extra a hora_ideal desde cronograma_id en adelante,
+// para vehiculo_id y todos los vehículos con número mayor.
+// ─────────────────────────────────────────────────────────────────────────────
+const aplicarTiempoExtra = async (req, res) => {
+  const { vehiculo_id, cronograma_id, minutos_extra } = req.body;
+
+  if (!vehiculo_id || !cronograma_id || minutos_extra === undefined) {
+    return res.status(400).json({
+      error: 'vehiculo_id, cronograma_id y minutos_extra son obligatorios.',
+    });
+  }
+
+  const minutos = Number(minutos_extra);
+  if (isNaN(minutos) || minutos === 0) {
+    return res.status(400).json({ error: 'minutos_extra debe ser un número distinto de cero.' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Orden del punto desde donde aplicar
+    const puntoRes = await client.query(
+      'SELECT orden FROM cronograma WHERE id = $1',
+      [cronograma_id]
+    );
+    if (puntoRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: `No se encontró el punto con ID ${cronograma_id}.` });
+    }
+    const ordenDesde = puntoRes.rows[0].orden;
+
+    // Todos los puntos desde ese orden en adelante
+    const puntosRes = await client.query(
+      'SELECT id FROM cronograma WHERE orden >= $1 ORDER BY orden ASC',
+      [ordenDesde]
+    );
+    const puntosIds = puntosRes.rows.map(r => r.id);
+
+    if (puntosIds.length === 0) {
+      await client.query('ROLLBACK');
+      return res.json({ mensaje: 'No hay puntos para actualizar desde ese CH.', actualizados: 0 });
+    }
+
+    // Todos los vehículos desde vehiculo_id en adelante según orden de ingreso
+    const vehiculosRes = await client.query(
+      `SELECT numero FROM vehiculos
+       WHERE orden_ingreso >= (SELECT orden_ingreso FROM vehiculos WHERE numero = $1)
+       ORDER BY orden_ingreso ASC`,
+      [vehiculo_id]
+    );
+    const vehiculosIds = vehiculosRes.rows.map(r => r.numero);
+
+    if (vehiculosIds.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: `No se encontró el vehículo N° ${vehiculo_id}.` });
+    }
+
+    // Sumar minutos a cada hora_ideal existente
+    let actualizados = 0;
+    for (const vid of vehiculosIds) {
+      for (const pid of puntosIds) {
+        const reg = await client.query(
+          'SELECT hora_ideal FROM registros_tiempos WHERE vehiculo_id = $1 AND cronograma_id = $2',
+          [vid, pid]
+        );
+        if (reg.rows.length === 0 || !reg.rows[0].hora_ideal) continue;
+
+        const horaActual = reg.rows[0].hora_ideal.slice(0, 5);
+        const nuevaHora = dayjs(`1970-01-01 ${horaActual}`, 'YYYY-MM-DD HH:mm')
+          .add(minutos, 'minute')
+          .format(FORMATO_HORA);
+
+        await client.query(
+          `UPDATE registros_tiempos SET hora_ideal = $1
+           WHERE vehiculo_id = $2 AND cronograma_id = $3`,
+          [nuevaHora, vid, pid]
+        );
+        actualizados++;
+      }
+    }
+
+    await client.query('COMMIT');
+    res.json({
+      mensaje: `Tiempo extra de ${minutos} min aplicado desde CH ID ${cronograma_id} en adelante.`,
+      vehiculos_afectados: vehiculosIds.length,
+      puntos_afectados:    puntosIds.length,
+      actualizados,
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('❌ aplicarTiempoExtra:', err.message);
+    res.status(500).json({ error: 'Error al aplicar el tiempo extra.' });
+  } finally {
+    client.release();
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DELETE /api/registros
-// Limpia la tabla registros_tiempos sin tocar vehiculos ni cronograma.
 // ─────────────────────────────────────────────────────────────────────────────
 const limpiarRegistros = async (_req, res) => {
   try {
@@ -434,18 +476,13 @@ const limpiarRegistros = async (_req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Funciones auxiliares
+// Helpers
 // ─────────────────────────────────────────────────────────────────────────────
+const esHoraValida = (hora) => /^([01]\d|2[0-3]):[0-5]\d$/.test(hora);
 
-// Valida que una hora tenga formato HH:mm
-const esHoraValida = (hora) => {
-  return /^([01]\d|2[0-3]):[0-5]\d$/.test(hora);
-};
-
-// Calcula la diferencia en minutos entre dos horas (puede ser negativa)
 const calcularOffsetMinutos = (horaOriginal, horaNueva) => {
-  const base   = dayjs(`1970-01-01 ${horaOriginal}`, 'YYYY-MM-DD HH:mm');
-  const nueva  = dayjs(`1970-01-01 ${horaNueva}`,    'YYYY-MM-DD HH:mm');
+  const base  = dayjs(`1970-01-01 ${horaOriginal}`, 'YYYY-MM-DD HH:mm');
+  const nueva = dayjs(`1970-01-01 ${horaNueva}`,    'YYYY-MM-DD HH:mm');
   return nueva.diff(base, 'minute');
 };
 
@@ -457,4 +494,5 @@ module.exports = {
   actualizarHoraReal,
   actualizarHoraIdeal,
   limpiarRegistros,
+  aplicarTiempoExtra,
 };

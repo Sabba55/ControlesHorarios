@@ -40,6 +40,9 @@ router.put('/hora-real', ctrl.actualizarHoraReal);
 // Body esperado: { vehiculo_id, cronograma_id, hora_ideal, propagar_offset }
 router.put('/hora-ideal', ctrl.actualizarHoraIdeal);
 
+// PUT /api/registros/tiempo-extra
+router.put('/tiempo-extra', ctrl.aplicarTiempoExtra);
+
 // ── DELETE /api/registros ──────────────────────────────────────────────────
 // Limpia SOLO la tabla registros_tiempos.
 // El cronograma y los vehículos se mantienen intactos.

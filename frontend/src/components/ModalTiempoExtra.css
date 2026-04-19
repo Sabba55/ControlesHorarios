@@ -1,0 +1,46 @@
+.modal-tiempo-extra {
+  color: #111827;
+}
+
+.modal-tiempo-extra .form-label {
+  color: #111827;
+  font-weight: 600;
+}
+
+.modal-tiempo-extra__vehiculo-info {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+}
+
+.modal-tiempo-extra__vehiculo-nombre {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #14532d;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.modal-tiempo-extra__vehiculo-detalle {
+  font-size: 0.8rem;
+  color: #166534;
+  margin-top: 0.2rem;
+}
+
+.modal-tiempo-extra__minutos {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  color: #0f172a;
+}
+
+.modal-tiempo-extra__advertencia {
+  background: #fefce8;
+  border: 1px solid #fde047;
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.8rem;
+  color: #713f12;
+}

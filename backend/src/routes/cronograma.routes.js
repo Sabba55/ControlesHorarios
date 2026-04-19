@@ -33,4 +33,6 @@ router.delete('/:id', ctrl.eliminarPunto);
 // Body esperado: [{ id, orden }, { id, orden }, ...]
 router.put('/reordenar/lote', ctrl.reordenarPuntos);
 
+router.delete('/',                ctrl.eliminarTodoElCronograma);
+
 module.exports = router;
